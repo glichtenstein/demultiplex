@@ -110,10 +110,8 @@ def generate_fastq_meta(ch_reads) {
 }
 
 // https://github.com/nf-core/sarek/blob/7ba61bde8e4f3b1932118993c766ed33b5da465e/workflows/sarek.nf#L1014-L1040
+// Function to read the first line of a FASTQ file and extract read group information
 def readgroup_from_fastq(path) {
-    // expected format:
-    // xx:yy:FLOWCELLID:LANE:... (seven fields)
-
     def line
 
     try {
@@ -124,18 +122,23 @@ def readgroup_from_fastq(path) {
             line = buffered.readLine()
         }
 
-        // Check if line is null or doesn't start with '@'
         if (line == null || !line.startsWith('@')) {
-            throw new IllegalArgumentException("The file ${path} is empty, not in FASTQ format, or does not start with '@'. First line: ${line}")
+            println("Warning! Skipping file: ${path}.\n" +
+                    "Expected a FASTQ file starting with '@', but found null.\n" +
+                    "File is likely empty, corrupt or inaccessible.\n" +
+                    "It will be skipped from further analyses.")
+            return null  // Signal to skip this file and gracefully continue
         }
 
         line = line.substring(1)
         def fields = line.split(':')
         if (fields.length < 7) {
-            throw new IllegalArgumentException("The file ${path} does not contain the expected number of fields. Found: ${fields.length}, Expected: 7. First line: ${line}")
+            println("Warning! File ${path} does not match the expected schema for " +
+            "Illumina's FASTQ headers. It will be skipped from further analyses.\n" +
+            "Expected format: @INSTRUMENT:RUN_NUMBER:FLOWCELL_ID:LANE:TITLE:X_POS:Y_POS")
+            return null  // Signal to skip this file and gracefully continue
         }
 
-        // Process fields to extract information
         def sequencer_serial = fields[0]
         def run_number       = fields[1]
         def fcid             = fields[2]
@@ -147,10 +150,12 @@ def readgroup_from_fastq(path) {
         rg.PU = [fcid, lane, index].findAll().join(".")
         rg.PL = "ILLUMINA"
 
-        // Return the read group information
         return rg
 
     } catch (Exception e) {
-        throw new RuntimeException("Error processing file ${path}: ${e.message}", e)
+        throw new RuntimeException(
+                "Critical Error! Processing file ${path} failed: ${e.message}.\n" +
+                "Ensure the file is in the correct FASTQ format.", e
+        )
     }
 }
