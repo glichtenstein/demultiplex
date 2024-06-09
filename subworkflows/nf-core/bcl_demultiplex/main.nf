@@ -120,7 +120,7 @@ def generate_fastq_meta(ch_reads, logFile) {
         } else {
             appendToLogFile(
                 "Empty or invalid FASTQ file: ${fastq}",
-                logFilePath
+                logFile
                 )
                 fastq = null
                 }
