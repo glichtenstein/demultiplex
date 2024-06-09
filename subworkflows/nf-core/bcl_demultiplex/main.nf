@@ -67,7 +67,7 @@ workflow BCL_DEMULTIPLEX {
         }
 
         // Generate meta for each fastq
-        ch_fastq_with_meta = generate_fastq_meta(ch_fastq, logFile)
+        ch_fastq_with_meta = generate_fastq_meta(ch_fastq, logFile.toString())
 
     emit:
         fastq    = ch_fastq_with_meta
@@ -120,7 +120,7 @@ def generate_fastq_meta(ch_reads, logFile) {
         } else {
             appendToLogFile(
                 "Empty or invalid FASTQ file: ${fastq}",
-                logFile
+                logFilePath
                 )
                 fastq = null
                 }
